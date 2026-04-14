@@ -10,11 +10,11 @@
         "projectUniqueName": "C:\\Source\\captive-portal-auto-login\\CaptivePortalAutoLogin.csproj",
         "projectName": "CaptivePortalAutoLogin",
         "projectPath": "C:\\Source\\captive-portal-auto-login\\CaptivePortalAutoLogin.csproj",
-        "packagesPath": "C:\\Users\\lilit\\.nuget\\packages\\",
+        "packagesPath": "C:\\Users\\Lilithe\\.nuget\\packages\\",
         "outputPath": "C:\\Source\\captive-portal-auto-login\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
-          "C:\\Users\\lilit\\AppData\\Roaming\\NuGet\\NuGet.Config"
+          "C:\\Users\\Lilithe\\AppData\\Roaming\\NuGet\\NuGet.Config"
         ],
         "originalTargetFrameworks": [
           "net8.0"
