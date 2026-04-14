@@ -22,6 +22,7 @@ It is designed for networks like hotel, cafe, airport, and guest Wi-Fi where nor
 - `HttpClient` for network probes and form submission
 - `HtmlAgilityPack` for HTML form parsing
 - `Microsoft.Extensions.Configuration` for JSON + environment variable config
+- `Microsoft.Extensions.Hosting` + Windows Service hosting integration
 
 ## Project structure
 
@@ -45,12 +46,12 @@ dotnet restore
 dotnet build
 ```
 
-2. Configure credentials in one of these ways:
+1. Configure credentials in one of these ways:
 
 - Preferred: environment variables
 - Optional: `PortalConfig` in [appsettings.json](appsettings.json)
 
-3. Run:
+1. Run:
 
 ```bash
 dotnet run
@@ -58,12 +59,57 @@ dotnet run
 
 The app keeps running until Ctrl+C.
 
+## Windows service installation (auto-start at boot)
+
+This app can run as a native Windows Service and start automatically when Windows boots.
+
+1. Publish for Windows:
+
+```powershell
+dotnet publish -c Release -r win-x64 --self-contained false
+```
+
+1. Open an elevated PowerShell or Command Prompt.
+
+1. Install the service from the published EXE:
+
+```powershell
+.\bin\Release\net8.0\win-x64\publish\CaptivePortalAutoLogin.exe --install-service --start
+```
+
+Optional service name:
+
+```powershell
+.\CaptivePortalAutoLogin.exe --install-service --service-name MyPortalAutoLogin --start
+```
+
+Uninstall:
+
+```powershell
+.\CaptivePortalAutoLogin.exe --uninstall-service
+```
+
+Notes:
+
+- Service install/uninstall requires administrator privileges.
+- Install from the EXE output, not `dotnet run`.
+- Credentials can still be supplied via environment variables (system-level variables are recommended for services).
+
+## Command line usage
+
+```text
+CaptivePortalAutoLogin.exe
+CaptivePortalAutoLogin.exe --install-service [--service-name Name] [--start]
+CaptivePortalAutoLogin.exe --uninstall-service [--service-name Name]
+CaptivePortalAutoLogin.exe --help
+```
+
 ## Configuration
 
 All settings are under `PortalConfig` in [appsettings.json](appsettings.json).
 
 | Key | Type | Default | Purpose |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | `Username` | string | `""` | Username/email for login forms |
 | `Password` | string | `""` | Password for login forms |
 | `PollIntervalSeconds` | int | `10` | Delay between portal checks |
@@ -126,6 +172,7 @@ When no credentials are configured, the handler prefers click-through forms and 
 ## Exit codes
 
 - `0`: clean shutdown (Ctrl+C)
+- `1`: command/setup failure (for example, service installation errors)
 - `2`: max retries exceeded
 
 ## Notes and limitations

@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("CaptivePortalAutoLogin")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+b2bf6eacf737bde01a96d077a69faaab9e49e670")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+6f71b897ae718d021dc256df58bf38fe390e261f")]
 [assembly: System.Reflection.AssemblyProductAttribute("CaptivePortalAutoLogin")]
 [assembly: System.Reflection.AssemblyTitleAttribute("CaptivePortalAutoLogin")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

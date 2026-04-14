@@ -53,7 +53,7 @@
             },
             "Microsoft.Extensions.Configuration.Binder": {
               "target": "Package",
-              "version": "[8.0.0, )"
+              "version": "[8.0.2, )"
             },
             "Microsoft.Extensions.Configuration.EnvironmentVariables": {
               "target": "Package",
@@ -61,7 +61,15 @@
             },
             "Microsoft.Extensions.Configuration.Json": {
               "target": "Package",
-              "version": "[8.0.0, )"
+              "version": "[8.0.1, )"
+            },
+            "Microsoft.Extensions.Hosting": {
+              "target": "Package",
+              "version": "[8.0.1, )"
+            },
+            "Microsoft.Extensions.Hosting.WindowsServices": {
+              "target": "Package",
+              "version": "[8.0.1, )"
             }
           },
           "imports": [

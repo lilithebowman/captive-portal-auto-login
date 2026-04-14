@@ -1,109 +1,252 @@
+using System.Diagnostics;
 using CaptivePortalAutoLogin;
 using CaptivePortalAutoLogin.Models;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Options;
 
-// ---------------------------------------------------------------------------
-// Configuration
-// ---------------------------------------------------------------------------
-var configuration = new ConfigurationBuilder()
-	.SetBasePath(AppContext.BaseDirectory)
-	.AddJsonFile("appsettings.json", optional: false, reloadOnChange: false)
-	// Environment variables override appsettings.json values.
-	// Set PORTALCONFIG__USERNAME and PORTALCONFIG__PASSWORD to avoid storing
-	// credentials in the config file.
-	.AddEnvironmentVariables()
-	.Build();
+const string DefaultServiceName = "CaptivePortalAutoLogin";
 
-var config = configuration.GetSection("PortalConfig").Get<PortalConfig>()
-			 ?? new PortalConfig();
-
-// Allow per-run credential overrides via environment variables.
-if (Environment.GetEnvironmentVariable("PORTAL_USERNAME") is { Length: > 0 } envUser)
-	config.Username = envUser;
-if (Environment.GetEnvironmentVariable("PORTAL_PASSWORD") is { Length: > 0 } envPass)
-	config.Password = envPass;
-
-// When no credentials are configured the handler will first try a click-through
-// button ("Accept", "Connect", etc.) and fall back to no@example.com / nowayjose.
-if (string.IsNullOrWhiteSpace(config.Username) || string.IsNullOrWhiteSpace(config.Password))
-	Console.WriteLine("[Main] No credentials configured — click-through mode will be attempted.");
-
-// ---------------------------------------------------------------------------
-// Services
-// ---------------------------------------------------------------------------
-var detector = new CaptivePortalDetector(config);
-var loginHandler = new PortalLoginHandler(config);
-
-using var cts = new CancellationTokenSource();
-Console.CancelKeyPress += (_, e) =>
+if (args.Any(a => string.Equals(a, "--help", StringComparison.OrdinalIgnoreCase)))
 {
-	e.Cancel = true;
-	cts.Cancel();
-	Console.WriteLine("\n[Main] Shutdown requested.");
-};
-
-// ---------------------------------------------------------------------------
-// Main loop
-// ---------------------------------------------------------------------------
-Console.WriteLine("[Main] Captive Portal Auto-Login started. Press Ctrl+C to exit.");
-
-int retries = 0;
-
-while (!cts.Token.IsCancellationRequested)
-{
-	try
-	{
-		var result = await detector.CheckAsync(cts.Token);
-
-		if (!result.IsPortalDetected)
-		{
-			retries = 0; // Reset retry counter — we have connectivity.
-			Console.WriteLine($"[Main] No captive portal. Next check in {config.PollIntervalSeconds}s.");
-		}
-		else
-		{
-			retries++;
-			Console.WriteLine($"[Main] Captive portal detected (attempt {retries}/{config.MaxRetries}).");
-
-			if (retries > config.MaxRetries)
-			{
-				Console.Error.WriteLine(
-					$"[Main] Exceeded maximum retries ({config.MaxRetries}). Giving up.");
-				return 2;
-			}
-
-			var loginUrl = result.LoginPageUrl!;
-			var success = await loginHandler.LoginAsync(loginUrl, cts.Token);
-
-			if (success)
-			{
-				Console.WriteLine("[Main] Login succeeded. Verifying connectivity...");
-				retries = 0;
-			}
-			else
-			{
-				Console.Error.WriteLine("[Main] Login attempt failed.");
-			}
-		}
-	}
-	catch (OperationCanceledException) when (cts.Token.IsCancellationRequested)
-	{
-		break;
-	}
-	catch (Exception ex)
-	{
-		Console.Error.WriteLine($"[Main] Unexpected error: {ex}");
-	}
-
-	try
-	{
-		await Task.Delay(TimeSpan.FromSeconds(config.PollIntervalSeconds), cts.Token);
-	}
-	catch (OperationCanceledException)
-	{
-		break;
-	}
+	PrintHelp();
+	return 0;
 }
 
-Console.WriteLine("[Main] Exited cleanly.");
+if (args.Any(a => string.Equals(a, "--install-service", StringComparison.OrdinalIgnoreCase)))
+{
+	if (!OperatingSystem.IsWindows())
+	{
+		Console.Error.WriteLine("[Main] Service installation is only supported on Windows.");
+		return 1;
+	}
+
+	return InstallWindowsService(args, DefaultServiceName);
+}
+
+if (args.Any(a => string.Equals(a, "--uninstall-service", StringComparison.OrdinalIgnoreCase)))
+{
+	if (!OperatingSystem.IsWindows())
+	{
+		Console.Error.WriteLine("[Main] Service removal is only supported on Windows.");
+		return 1;
+	}
+
+	return UninstallWindowsService(args, DefaultServiceName);
+}
+
+var builder = Host.CreateApplicationBuilder(args);
+
+builder.Configuration
+	.SetBasePath(AppContext.BaseDirectory)
+	.AddJsonFile("appsettings.json", optional: false, reloadOnChange: false)
+	.AddEnvironmentVariables();
+
+if (OperatingSystem.IsWindows())
+	builder.Services.AddWindowsService();
+
+builder.Services
+	.AddOptions<PortalConfig>()
+	.Bind(builder.Configuration.GetSection("PortalConfig"))
+	.PostConfigure(cfg =>
+	{
+		if (Environment.GetEnvironmentVariable("PORTAL_USERNAME") is { Length: > 0 } envUser)
+			cfg.Username = envUser;
+		if (Environment.GetEnvironmentVariable("PORTAL_PASSWORD") is { Length: > 0 } envPass)
+			cfg.Password = envPass;
+	});
+
+builder.Services.AddHostedService<CaptivePortalWorker>();
+
+var host = builder.Build();
+await host.RunAsync();
 return 0;
+
+static int InstallWindowsService(string[] args, string defaultServiceName)
+{
+	var serviceName = GetArgValue(args, "--service-name") ?? defaultServiceName;
+	var processPath = Environment.ProcessPath;
+	if (string.IsNullOrWhiteSpace(processPath))
+	{
+		Console.Error.WriteLine("[Main] Could not determine executable path.");
+		return 1;
+	}
+
+	if (Path.GetFileName(processPath).Equals("dotnet", StringComparison.OrdinalIgnoreCase) ||
+		Path.GetFileName(processPath).Equals("dotnet.exe", StringComparison.OrdinalIgnoreCase))
+	{
+		Console.Error.WriteLine(
+			"[Main] Install from the built EXE, not dotnet run. Example: bin\\Release\\net8.0\\publish\\CaptivePortalAutoLogin.exe --install-service");
+		return 1;
+	}
+
+	Console.WriteLine($"[Main] Installing Windows service '{serviceName}' for {processPath}");
+
+	var quotedPath = $"\"{processPath}\"";
+	var createExit = RunSc($"create \"{serviceName}\" binPath= {quotedPath} start= auto DisplayName= \"{serviceName}\"");
+	if (createExit != 0)
+		return createExit;
+
+	_ = RunSc($"description \"{serviceName}\" \"Captive portal auto-login service\"");
+
+	if (args.Any(a => string.Equals(a, "--start", StringComparison.OrdinalIgnoreCase)))
+	{
+		var startExit = RunSc($"start \"{serviceName}\"");
+		if (startExit != 0)
+			return startExit;
+	}
+
+	Console.WriteLine($"[Main] Service '{serviceName}' installed with automatic startup.");
+	return 0;
+}
+
+static int UninstallWindowsService(string[] args, string defaultServiceName)
+{
+	var serviceName = GetArgValue(args, "--service-name") ?? defaultServiceName;
+	Console.WriteLine($"[Main] Removing Windows service '{serviceName}'");
+
+	_ = RunSc($"stop \"{serviceName}\"");
+	var deleteExit = RunSc($"delete \"{serviceName}\"");
+	if (deleteExit != 0)
+		return deleteExit;
+
+	Console.WriteLine($"[Main] Service '{serviceName}' removed.");
+	return 0;
+}
+
+static string? GetArgValue(string[] args, string key)
+{
+	for (var i = 0; i < args.Length - 1; i++)
+	{
+		if (string.Equals(args[i], key, StringComparison.OrdinalIgnoreCase))
+			return args[i + 1];
+	}
+
+	return null;
+}
+
+static int RunSc(string arguments)
+{
+	using var proc = Process.Start(new ProcessStartInfo
+	{
+		FileName = "sc.exe",
+		Arguments = arguments,
+		UseShellExecute = false,
+		CreateNoWindow = true,
+		RedirectStandardOutput = true,
+		RedirectStandardError = true,
+	});
+
+	if (proc is null)
+	{
+		Console.Error.WriteLine("[Main] Failed to start sc.exe.");
+		return 1;
+	}
+
+	var output = proc.StandardOutput.ReadToEnd();
+	var error = proc.StandardError.ReadToEnd();
+	proc.WaitForExit();
+
+	if (!string.IsNullOrWhiteSpace(output))
+		Console.WriteLine($"[Main] sc.exe: {output.Trim()}");
+	if (!string.IsNullOrWhiteSpace(error))
+		Console.Error.WriteLine($"[Main] sc.exe error: {error.Trim()}");
+
+	return proc.ExitCode;
+}
+
+static void PrintHelp()
+{
+	Console.WriteLine("Captive Portal Auto-Login");
+	Console.WriteLine();
+	Console.WriteLine("Usage:");
+	Console.WriteLine("  CaptivePortalAutoLogin.exe");
+	Console.WriteLine("  CaptivePortalAutoLogin.exe --install-service [--service-name Name] [--start]");
+	Console.WriteLine("  CaptivePortalAutoLogin.exe --uninstall-service [--service-name Name]");
+	Console.WriteLine("  CaptivePortalAutoLogin.exe --help");
+}
+
+internal sealed class CaptivePortalWorker : BackgroundService
+{
+	private readonly PortalConfig _config;
+	private readonly CaptivePortalDetector _detector;
+	private readonly PortalLoginHandler _loginHandler;
+	private readonly IHostApplicationLifetime _lifetime;
+
+	public CaptivePortalWorker(IOptions<PortalConfig> options, IHostApplicationLifetime lifetime)
+	{
+		_config = options.Value ?? new PortalConfig();
+		_detector = new CaptivePortalDetector(_config);
+		_loginHandler = new PortalLoginHandler(_config);
+		_lifetime = lifetime;
+
+		if (string.IsNullOrWhiteSpace(_config.Username) || string.IsNullOrWhiteSpace(_config.Password))
+			Console.WriteLine("[Main] No credentials configured - click-through mode will be attempted.");
+	}
+
+	protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+	{
+		Console.WriteLine("[Main] Captive Portal Auto-Login started.");
+		int retries = 0;
+
+		while (!stoppingToken.IsCancellationRequested)
+		{
+			try
+			{
+				var result = await _detector.CheckAsync(stoppingToken);
+
+				if (!result.IsPortalDetected)
+				{
+					retries = 0;
+					Console.WriteLine($"[Main] No captive portal. Next check in {_config.PollIntervalSeconds}s.");
+				}
+				else
+				{
+					retries++;
+					Console.WriteLine($"[Main] Captive portal detected (attempt {retries}/{_config.MaxRetries}).");
+
+					if (retries > _config.MaxRetries)
+					{
+						Console.Error.WriteLine($"[Main] Exceeded maximum retries ({_config.MaxRetries}). Giving up.");
+						Environment.ExitCode = 2;
+						_lifetime.StopApplication();
+						break;
+					}
+					else
+					{
+						var success = await _loginHandler.LoginAsync(result.LoginPageUrl!, stoppingToken);
+						if (success)
+						{
+							Console.WriteLine("[Main] Login succeeded. Verifying connectivity...");
+							retries = 0;
+						}
+						else
+						{
+							Console.Error.WriteLine("[Main] Login attempt failed.");
+						}
+					}
+				}
+			}
+			catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
+			{
+				break;
+			}
+			catch (Exception ex)
+			{
+				Console.Error.WriteLine($"[Main] Unexpected error: {ex}");
+			}
+
+			try
+			{
+				await Task.Delay(TimeSpan.FromSeconds(_config.PollIntervalSeconds), stoppingToken);
+			}
+			catch (OperationCanceledException)
+			{
+				break;
+			}
+		}
+
+		Console.WriteLine("[Main] Exited cleanly.");
+	}
+}
