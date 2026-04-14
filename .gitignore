@@ -1,0 +1,34 @@
+# Build output
+bin/
+obj/
+
+# User-specific files
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Visual Studio / VS Code local settings
+.vs/
+.vscode/*.code-workspace
+
+# Rider / ReSharper
+.idea/
+*.sln.iml
+
+# NuGet
+packages/
+*.nupkg
+
+# Logs and diagnostics
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Local environment and secrets
+.env
+.env.*
+appsettings.Development.json
+appsettings.Local.json
