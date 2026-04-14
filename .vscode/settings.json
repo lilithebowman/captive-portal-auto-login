@@ -1,6 +1,7 @@
 {
 	"chat.tools.terminal.autoApprove": {
 		"where.exe": true,
-		"/mnt/c/Program\\": true
+		"/mnt/c/Program\\": true,
+		"dotnet build": true
 	}
 }
