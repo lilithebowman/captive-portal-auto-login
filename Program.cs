@@ -172,6 +172,7 @@ internal sealed class CaptivePortalWorker : BackgroundService
 	private readonly PortalConfig _config;
 	private readonly CaptivePortalDetector _detector;
 	private readonly PortalLoginHandler _loginHandler;
+	private readonly WifiScanner? _wifiScanner;
 	private readonly IHostApplicationLifetime _lifetime;
 
 	public CaptivePortalWorker(IOptions<PortalConfig> options, IHostApplicationLifetime lifetime)
@@ -180,6 +181,12 @@ internal sealed class CaptivePortalWorker : BackgroundService
 		_detector = new CaptivePortalDetector(_config);
 		_loginHandler = new PortalLoginHandler(_config);
 		_lifetime = lifetime;
+
+		if (_config.EnableWifiScanning)
+		{
+			_wifiScanner = new WifiScanner(_config.BlockedSsids);
+			Console.WriteLine("[Main] Wi-Fi scanning enabled.");
+		}
 
 		if (string.IsNullOrWhiteSpace(_config.Username) || string.IsNullOrWhiteSpace(_config.Password))
 			Console.WriteLine("[Main] No credentials configured - click-through mode will be attempted.");
@@ -196,12 +203,12 @@ internal sealed class CaptivePortalWorker : BackgroundService
 			{
 				var result = await _detector.CheckAsync(stoppingToken);
 
-				if (!result.IsPortalDetected)
+				if (result.IsConnectivityConfirmed)
 				{
 					retries = 0;
-					Console.WriteLine($"[Main] No captive portal. Next check in {_config.PollIntervalSeconds}s.");
+					Console.WriteLine($"[Main] Internet confirmed. Next check in {_config.PollIntervalSeconds}s.");
 				}
-				else
+				else if (result.IsPortalDetected)
 				{
 					retries++;
 					Console.WriteLine($"[Main] Captive portal detected (attempt {retries}/{_config.MaxRetries}).");
@@ -227,6 +234,15 @@ internal sealed class CaptivePortalWorker : BackgroundService
 						}
 					}
 				}
+				else if (_wifiScanner is not null)
+				{
+					// No connectivity confirmed and no portal detected — try to find an open AP.
+					await TryScanAndJoinAsync(stoppingToken);
+				}
+				else
+				{
+					Console.WriteLine($"[Main] No captive portal. Next check in {_config.PollIntervalSeconds}s.");
+				}
 			}
 			catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
 			{
@@ -248,5 +264,74 @@ internal sealed class CaptivePortalWorker : BackgroundService
 		}
 
 		Console.WriteLine("[Main] Exited cleanly.");
+	}
+
+	/// <summary>
+	/// Scans for open Wi-Fi access points and attempts to connect to each one.
+	/// For each candidate: connects → probes → attempts portal login if needed.
+	/// If an AP cannot provide internet access (or login fails), it is blocked for
+	/// the remainder of the session and the next candidate is tried.
+	/// </summary>
+	private async Task TryScanAndJoinAsync(CancellationToken ct)
+	{
+		Console.WriteLine("[Main] No connectivity detected. Scanning for open Wi-Fi networks...");
+		var openAps = await _wifiScanner!.ScanOpenNetworksAsync(ct);
+
+		if (openAps.Count == 0)
+		{
+			Console.WriteLine("[Main] No open Wi-Fi networks found.");
+			return;
+		}
+
+		Console.WriteLine($"[Main] Found {openAps.Count} open AP(s): {string.Join(", ", openAps.Select(s => $"'{s}'"))}");
+
+		foreach (var ssid in openAps)
+		{
+			if (ct.IsCancellationRequested)
+				break;
+
+			Console.WriteLine($"[Main] Trying AP: '{ssid}'");
+
+			var connected = await _wifiScanner.ConnectAsync(ssid, ct);
+			if (!connected)
+			{
+				Console.WriteLine($"[Main] Could not connect to '{ssid}'. Blocking.");
+				_wifiScanner.BlockSsid(ssid);
+				continue;
+			}
+
+			// Allow the network stack to settle after association.
+			await Task.Delay(TimeSpan.FromSeconds(3), ct);
+
+			var probe = await _detector.CheckAsync(ct);
+
+			if (probe.IsConnectivityConfirmed)
+			{
+				Console.WriteLine($"[Main] Internet confirmed via '{ssid}'.");
+				return;
+			}
+
+			if (probe.IsPortalDetected)
+			{
+				Console.WriteLine($"[Main] Captive portal detected on '{ssid}'. Attempting login...");
+				var loginOk = await _loginHandler.LoginAsync(probe.LoginPageUrl!, ct);
+				if (loginOk)
+				{
+					Console.WriteLine($"[Main] Login succeeded on '{ssid}'.");
+					return;
+				}
+
+				Console.Error.WriteLine($"[Main] Login failed on '{ssid}'. Blocking AP.");
+			}
+			else
+			{
+				Console.WriteLine($"[Main] No internet reachable via '{ssid}'. Blocking AP.");
+			}
+
+			_wifiScanner.BlockSsid(ssid);
+			await _wifiScanner.DisconnectAsync(ct);
+		}
+
+		Console.WriteLine("[Main] No usable open Wi-Fi network found.");
 	}
 }

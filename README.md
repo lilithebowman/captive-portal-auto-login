@@ -118,6 +118,8 @@ All settings are under `PortalConfig` in [appsettings.json](appsettings.json).
 | `ProbeEndpoints` | array | built-in list | Connectivity probes |
 | `UsernameFieldHints` | array | common usernames | Field-name matching hints |
 | `PasswordFieldHints` | array | common passwords | Field-name matching hints |
+| `EnableWifiScanning` | bool | `false` | Scan for open APs and join them when offline |
+| `BlockedSsids` | array | `[]` | SSIDs to never join (permanent deny-list) |
 
 ### Environment variable overrides
 
@@ -146,6 +148,46 @@ export PORTAL_USERNAME="user@example.com"
 export PORTAL_PASSWORD="super-secret"
 dotnet run
 ```
+
+## Wi-Fi scanning
+
+When `EnableWifiScanning` is `true`, the app automatically searches for open (unsecured) Wi-Fi access points and attempts to join them whenever no internet connectivity is detected.
+
+### Flow
+
+1. Probe endpoints all fail (no network) → scan for open APs.
+2. For each open AP (ordered by signal strength):
+   - Connect to it.
+   - Probe for internet connectivity.
+   - If internet is reachable → done.
+   - If a captive portal is detected → attempt login.
+   - If login succeeds → done.
+   - Otherwise → mark AP as **do not join** for this session and try the next one.
+3. Blocked SSIDs are tracked in memory for the session. Pre-configure permanent entries in `BlockedSsids`.
+
+### Platform requirements
+
+| Platform | Tool required |
+| --- | --- |
+| Windows | WLAN AutoConfig service running; administrator not required for scanning/connecting |
+| Linux | `nmcli` (NetworkManager CLI) |
+
+### Enable via appsettings.json
+
+```json
+"PortalConfig": {
+  "EnableWifiScanning": true,
+  "BlockedSsids": ["HotspotToAvoid", "BadCoffeeShopWifi"]
+}
+```
+
+### Enable via environment variable
+
+```powershell
+$env:PORTALCONFIG__ENABLEWIFISCANNING = "true"
+```
+
+> **Note:** Blocked SSIDs reset when the app restarts unless they are listed in `BlockedSsids` in the config.
 
 ## How detection works
 

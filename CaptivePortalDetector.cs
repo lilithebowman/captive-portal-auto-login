@@ -94,7 +94,7 @@ public sealed class CaptivePortalDetector
 
 			// Content matches → we have real internet access through this probe.
 			Console.WriteLine($"[Detector] Internet reachable via {endpoint.Url}");
-			return DetectionResult.NoPortal;
+			return DetectionResult.Connected;
 		}
 
 		return null; // Inconclusive for this endpoint; try the next one.
@@ -112,7 +112,16 @@ public sealed class CaptivePortalDetector
 /// <param name="LoginPageUrl">
 /// URL of the portal login page, or <c>null</c> when no portal was detected.
 /// </param>
-public sealed record DetectionResult(bool IsPortalDetected, string? LoginPageUrl)
+/// <param name="IsConnectivityConfirmed">
+/// True when at least one probe confirmed real internet access (expected content returned).
+/// False when all probes failed or were inconclusive — this does NOT mean a portal is present;
+/// it means connectivity could not be verified.
+/// </param>
+public sealed record DetectionResult(bool IsPortalDetected, string? LoginPageUrl, bool IsConnectivityConfirmed = false)
 {
-	public static readonly DetectionResult NoPortal = new(false, null);
+	/// <summary>All probes were inconclusive or failed; no portal was detected.</summary>
+	public static readonly DetectionResult NoPortal = new(false, null, false);
+
+	/// <summary>At least one probe confirmed real internet access.</summary>
+	public static readonly DetectionResult Connected = new(false, null, true);
 }

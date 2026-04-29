@@ -56,6 +56,20 @@ public sealed class PortalConfig
 	[
 		"password", "pass", "passwd", "pwd"
 	];
+
+	/// <summary>
+	/// When true, the app scans for open (unsecured) Wi-Fi access points and attempts
+	/// to join them when no internet connectivity is detected.
+	/// Requires appropriate OS permissions (Windows: WLAN AutoConfig; Linux: nmcli/NetworkManager).
+	/// Defaults to false — must be explicitly opted in.
+	/// </summary>
+	public bool EnableWifiScanning { get; set; } = false;
+
+	/// <summary>
+	/// SSIDs that the Wi-Fi scanner will never attempt to join.
+	/// These are merged with any SSIDs blocked at runtime due to failed validation.
+	/// </summary>
+	public List<string> BlockedSsids { get; set; } = [];
 }
 
 public sealed class ProbeEndpoint
