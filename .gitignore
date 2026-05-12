@@ -35,3 +35,5 @@ appsettings.Local.json
 settings.json
 .vscode
 .vscode/settings.json
+~
+~/*
