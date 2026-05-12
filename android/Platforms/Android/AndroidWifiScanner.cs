@@ -44,6 +44,7 @@ public sealed class AndroidWifiScanner : IWifiScanner
 
 	public bool IsBlocked(string ssid) => _blockedSsids.Contains(ssid);
 
+#pragma warning disable CA1422
 	public Task<IReadOnlyList<string>> ScanOpenNetworksAsync(CancellationToken ct = default)
 	{
 		var wm = Platform.AppContext.GetSystemService(Context.WifiService) as WifiManager;
@@ -64,6 +65,7 @@ public sealed class AndroidWifiScanner : IWifiScanner
 
 		return Task.FromResult<IReadOnlyList<string>>(open);
 	}
+#pragma warning restore CA1422
 
 	public async Task<bool> ConnectAsync(string ssid, CancellationToken ct = default)
 	{
@@ -85,6 +87,7 @@ public sealed class AndroidWifiScanner : IWifiScanner
 	// Modern connection (Android 10+ / API 29+)
 	// -------------------------------------------------------------------
 
+#pragma warning disable CA1416
 	private async Task<bool> ConnectModernAsync(string ssid, CancellationToken ct)
 	{
 		if (_cm is null) return false;
@@ -100,9 +103,10 @@ public sealed class AndroidWifiScanner : IWifiScanner
 
 		var requestBuilder = new NetworkRequest.Builder()
 			.AddTransportType(TransportType.Wifi)
-			.SetNetworkSpecifier(specifier);
+			.SetNetworkSpecifier(specifier!);
 
-		var request = requestBuilder.Build();
+		var request = requestBuilder.Build()
+			?? throw new InvalidOperationException("Failed to build the Wi-Fi network request.");
 
 		var callback = new SimpleNetworkCallback(
 			onAvailable: network =>
@@ -124,7 +128,7 @@ public sealed class AndroidWifiScanner : IWifiScanner
 
 		// 15-second timeout passed to the OS — it will call onUnavailable if not satisfied.
 		if (OperatingSystem.IsAndroidVersionAtLeast(26))
-			_cm.RequestNetwork(request!, callback, 15_000);
+			_cm.RequestNetwork(request, callback, 15_000);
 		else
 			tcs.TrySetResult(false);
 
@@ -137,6 +141,7 @@ public sealed class AndroidWifiScanner : IWifiScanner
 			return false;
 		}
 	}
+#pragma warning restore CA1416
 
 	private void ReleaseNetworkCallback()
 	{

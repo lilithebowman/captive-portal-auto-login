@@ -89,9 +89,12 @@ public partial class MainPage : ContentPage
 			return;
 
 #if ANDROID
-        var intent = new Intent(Platform.AppContext, typeof(CaptivePortalForegroundService));
-        intent.SetAction(CaptivePortalForegroundService.ActionStart);
-        Platform.AppContext.StartForegroundService(intent);
+		var intent = new Intent(Platform.AppContext, typeof(CaptivePortalForegroundService));
+		intent.SetAction(CaptivePortalForegroundService.ActionStart);
+		if (OperatingSystem.IsAndroidVersionAtLeast(26))
+			Platform.AppContext.StartForegroundService(intent);
+		else
+			Platform.AppContext.StartService(intent);
 #endif
 	}
 

@@ -43,7 +43,10 @@ public class CaptivePortalForegroundService : Service
 		if (action == ActionStop)
 		{
 			StopWorker();
-			StopForeground(StopForegroundFlags.Remove);
+			if (OperatingSystem.IsAndroidVersionAtLeast(24))
+				StopForeground(StopForegroundFlags.Remove);
+			else
+				StopForeground(true);
 			StopSelf();
 			return StartCommandResult.NotSticky;
 		}
@@ -202,7 +205,11 @@ public class CaptivePortalForegroundService : Service
 			new Intent(this, typeof(MainActivity)),
 			pendingIntentFlags);
 
-		return new Notification.Builder(this, ChannelId)
+		var builder = OperatingSystem.IsAndroidVersionAtLeast(26)
+			? new Notification.Builder(this, ChannelId)
+			: new Notification.Builder(this);
+
+		return builder
 			.SetContentTitle("Captive Portal Auto-Login")
 			.SetContentText(contentText)
 			.SetSmallIcon(global::Android.Resource.Drawable.IcDialogInfo)
