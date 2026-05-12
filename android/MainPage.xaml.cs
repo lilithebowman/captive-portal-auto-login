@@ -2,6 +2,7 @@
 using Android.Content;
 #endif
 
+using Microsoft.Maui.ApplicationModel;
 using Microsoft.Maui.Storage;
 
 namespace CaptivePortalAutoLogin;
@@ -62,22 +63,63 @@ public partial class MainPage : ContentPage
 	private void OnRetryStepperChanged(object? sender, ValueChangedEventArgs e)
 		=> RetryLabel.Text = $"{(int)e.NewValue}";
 
-	private void OnStartStopClicked(object? sender, EventArgs e)
+	private async void OnStartStopClicked(object? sender, EventArgs e)
 	{
 		if (_serviceRunning)
 			StopService();
 		else
-			StartService();
+			await StartServiceAsync();
 	}
 
-	private void StartService()
+	private async Task StartServiceAsync()
 	{
 		SaveSettings();
+
+		if (!await EnsureRequiredPermissionsAsync())
+			return;
+
 #if ANDROID
         var intent = new Intent(Platform.AppContext, typeof(CaptivePortalForegroundService));
         intent.SetAction(CaptivePortalForegroundService.ActionStart);
         Platform.AppContext.StartForegroundService(intent);
 #endif
+	}
+
+	private async Task<bool> EnsureRequiredPermissionsAsync()
+	{
+		var missingPermissions = new List<string>();
+
+		if (WifiScanSwitch.IsToggled)
+		{
+			var locationStatus = await Permissions.CheckStatusAsync<Permissions.LocationWhenInUse>();
+			if (locationStatus != PermissionStatus.Granted)
+				locationStatus = await Permissions.RequestAsync<Permissions.LocationWhenInUse>();
+
+			if (locationStatus != PermissionStatus.Granted)
+				missingPermissions.Add("Location");
+		}
+
+		if (DeviceInfo.Platform == DevicePlatform.Android && OperatingSystem.IsAndroidVersionAtLeast(33))
+		{
+			var notificationStatus = await Permissions.CheckStatusAsync<Permissions.PostNotifications>();
+			if (notificationStatus != PermissionStatus.Granted)
+				notificationStatus = await Permissions.RequestAsync<Permissions.PostNotifications>();
+
+			if (notificationStatus != PermissionStatus.Granted)
+				missingPermissions.Add("Notifications");
+		}
+
+		if (missingPermissions.Count == 0)
+			return true;
+
+		var deniedList = string.Join(", ", missingPermissions);
+		var message = $"[Main] Required permissions denied: {deniedList}. Service not started.";
+		OnLogReceived(message);
+		OnStatusChanged(false);
+		_currentDetailedStatus = $"Permission required: {deniedList}";
+		DetailedStatusLabel.Text = _currentDetailedStatus;
+		DetailedStatusLabel.TextColor = Color.FromArgb("#C62828");
+		return false;
 	}
 
 	private void StopService()

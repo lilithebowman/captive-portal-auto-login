@@ -16,26 +16,4 @@ namespace CaptivePortalAutoLogin;
 		ConfigChanges.Density)]
 public class MainActivity : MauiAppCompatActivity
 {
-	private const int RequestNotificationPermission = 1001;
-
-	protected override void OnCreate(Bundle? savedInstanceState)
-	{
-		base.OnCreate(savedInstanceState);
-
-		// Request POST_NOTIFICATIONS permission at runtime (Android 13+).
-		if (Build.VERSION.SdkInt >= BuildVersionCodes.Tiramisu)
-		{
-			RequestPermissions(
-				[global::Android.Manifest.Permission.PostNotifications],
-				RequestNotificationPermission);
-		}
-
-		// Request location permission needed for Wi-Fi scanning (Android 9+).
-		if (Build.VERSION.SdkInt >= BuildVersionCodes.P)
-		{
-			RequestPermissions(
-				[global::Android.Manifest.Permission.AccessFineLocation],
-				1002);
-		}
-	}
 }
