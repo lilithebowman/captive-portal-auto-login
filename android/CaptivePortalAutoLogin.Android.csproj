@@ -16,6 +16,7 @@
 
     <!-- Keep minimum API aligned with SDK default Android target platform inference. -->
     <SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">21</SupportedOSPlatformVersion>
+    <TargetPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">36</TargetPlatformVersion>
   </PropertyGroup>
 
   <ItemGroup>
