@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk.Maui">
 
   <PropertyGroup>
     <TargetFrameworks>net10.0-android</TargetFrameworks>

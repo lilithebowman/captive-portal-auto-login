@@ -1,4 +1,4 @@
-using Microsoft.Extensions.Logging;
+using Microsoft.Maui.Hosting;
 
 namespace CaptivePortalAutoLogin;
 

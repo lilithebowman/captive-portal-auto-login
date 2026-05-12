@@ -2,7 +2,9 @@
 using Android.Content;
 #endif
 
+using Microsoft.Maui.Controls;
 using Microsoft.Maui.ApplicationModel;
+using Microsoft.Maui.Devices;
 using Microsoft.Maui.Storage;
 
 namespace CaptivePortalAutoLogin;
@@ -65,10 +67,18 @@ public partial class MainPage : ContentPage
 
 	private async void OnStartStopClicked(object? sender, EventArgs e)
 	{
-		if (_serviceRunning)
-			StopService();
-		else
-			await StartServiceAsync();
+		try
+		{
+			if (_serviceRunning)
+				StopService();
+			else
+				await StartServiceAsync();
+		}
+		catch (Exception ex)
+		{
+			OnLogReceived($"[Main] ✗ Failed to update service state: {ex.Message}");
+			OnStatusChanged(false);
+		}
 	}
 
 	private async Task StartServiceAsync()
@@ -87,39 +97,48 @@ public partial class MainPage : ContentPage
 
 	private async Task<bool> EnsureRequiredPermissionsAsync()
 	{
-		var missingPermissions = new List<string>();
-
-		if (WifiScanSwitch.IsToggled)
+		try
 		{
-			var locationStatus = await Permissions.CheckStatusAsync<Permissions.LocationWhenInUse>();
-			if (locationStatus != PermissionStatus.Granted)
-				locationStatus = await Permissions.RequestAsync<Permissions.LocationWhenInUse>();
+			var missingPermissions = new List<string>();
 
-			if (locationStatus != PermissionStatus.Granted)
-				missingPermissions.Add("Location");
+			if (WifiScanSwitch.IsToggled)
+			{
+				var locationStatus = await Permissions.CheckStatusAsync<Permissions.LocationWhenInUse>();
+				if (locationStatus != PermissionStatus.Granted)
+					locationStatus = await Permissions.RequestAsync<Permissions.LocationWhenInUse>();
+
+				if (locationStatus != PermissionStatus.Granted)
+					missingPermissions.Add("Location");
+			}
+
+			if (DeviceInfo.Platform == DevicePlatform.Android && OperatingSystem.IsAndroidVersionAtLeast(33))
+			{
+				var notificationStatus = await Permissions.CheckStatusAsync<Permissions.PostNotifications>();
+				if (notificationStatus != PermissionStatus.Granted)
+					notificationStatus = await Permissions.RequestAsync<Permissions.PostNotifications>();
+
+				if (notificationStatus != PermissionStatus.Granted)
+					missingPermissions.Add("Notifications");
+			}
+
+			if (missingPermissions.Count == 0)
+				return true;
+
+			var deniedList = string.Join(", ", missingPermissions);
+			var message = $"[Main] Required permissions denied: {deniedList}. Service not started.";
+			OnLogReceived(message);
+			OnStatusChanged(false);
+			_currentDetailedStatus = $"Permission required: {deniedList}";
+			DetailedStatusLabel.Text = _currentDetailedStatus;
+			DetailedStatusLabel.TextColor = Color.FromArgb("#C62828");
+			return false;
 		}
-
-		if (DeviceInfo.Platform == DevicePlatform.Android && OperatingSystem.IsAndroidVersionAtLeast(33))
+		catch (Exception ex)
 		{
-			var notificationStatus = await Permissions.CheckStatusAsync<Permissions.PostNotifications>();
-			if (notificationStatus != PermissionStatus.Granted)
-				notificationStatus = await Permissions.RequestAsync<Permissions.PostNotifications>();
-
-			if (notificationStatus != PermissionStatus.Granted)
-				missingPermissions.Add("Notifications");
+			OnLogReceived($"[Main] ✗ Permission check failed: {ex.Message}");
+			OnStatusChanged(false);
+			return false;
 		}
-
-		if (missingPermissions.Count == 0)
-			return true;
-
-		var deniedList = string.Join(", ", missingPermissions);
-		var message = $"[Main] Required permissions denied: {deniedList}. Service not started.";
-		OnLogReceived(message);
-		OnStatusChanged(false);
-		_currentDetailedStatus = $"Permission required: {deniedList}";
-		DetailedStatusLabel.Text = _currentDetailedStatus;
-		DetailedStatusLabel.TextColor = Color.FromArgb("#C62828");
-		return false;
 	}
 
 	private void StopService()
