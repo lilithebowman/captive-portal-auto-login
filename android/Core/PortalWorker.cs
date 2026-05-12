@@ -18,7 +18,7 @@ public sealed class PortalWorker
 	/// <param name="config">Portal configuration loaded from user preferences.</param>
 	/// <param name="wifiScanner">Optional platform Wi-Fi scanner; pass null to skip Wi-Fi scanning.</param>
 	/// <param name="log">
-	/// Optional log sink. Defaults to <see cref="Console.WriteLine"/>.
+	/// Optional log sink. Defaults to Console.WriteLine.
 	/// The delegate is invoked from the worker task — marshal to the UI thread when needed.
 	/// </param>
 	public PortalWorker(

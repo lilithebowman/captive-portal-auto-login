@@ -28,7 +28,6 @@ public class CaptivePortalForegroundService : Service
 	// requiring a bound service connection.
 	public static event Action<string>? LogReceived;
 	public static event Action<bool>? StatusChanged;
-	public static event Action<string>? DetailedStatusChanged;
 
 	// -------------------------------------------------------------------
 	// Service lifecycle
@@ -58,7 +57,7 @@ public class CaptivePortalForegroundService : Service
 
 		// Android 10+ (Q) requires the foreground service type to be declared at runtime
 		// AND in the manifest. Android 14+ (UpsideDownCake) enforces this strictly.
-		if (Build.VERSION.SdkInt >= BuildVersionCodes.Q)
+		if (OperatingSystem.IsAndroidVersionAtLeast(29))
 			StartForeground(NotificationId, notification,
 				global::Android.Content.PM.ForegroundService.TypeDataSync);
 		else
@@ -176,7 +175,7 @@ public class CaptivePortalForegroundService : Service
 
 	private void EnsureNotificationChannel()
 	{
-		if (Build.VERSION.SdkInt < BuildVersionCodes.O) return;
+		if (!OperatingSystem.IsAndroidVersionAtLeast(26)) return;
 
 		var channel = new NotificationChannel(
 			ChannelId,
@@ -193,11 +192,15 @@ public class CaptivePortalForegroundService : Service
 	private Notification BuildNotification(string contentText)
 	{
 		// Tapping the notification reopens the app.
+		var pendingIntentFlags = OperatingSystem.IsAndroidVersionAtLeast(23)
+			? PendingIntentFlags.Immutable
+			: PendingIntentFlags.UpdateCurrent;
+
 		var pendingIntent = PendingIntent.GetActivity(
 			this,
 			0,
 			new Intent(this, typeof(MainActivity)),
-			PendingIntentFlags.Immutable);
+			pendingIntentFlags);
 
 		return new Notification.Builder(this, ChannelId)
 			.SetContentTitle("Captive Portal Auto-Login")

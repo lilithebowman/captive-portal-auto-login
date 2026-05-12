@@ -98,16 +98,18 @@ public sealed class AndroidWifiScanner : IWifiScanner
 			.SetSsid(ssid)
 			.Build();
 
-		var request = new NetworkRequest.Builder()
+		var requestBuilder = new NetworkRequest.Builder()
 			.AddTransportType(TransportType.Wifi)
-			.SetNetworkSpecifier(specifier)
-			.Build()!;
+			.SetNetworkSpecifier(specifier);
+
+		var request = requestBuilder.Build();
 
 		var callback = new SimpleNetworkCallback(
 			onAvailable: network =>
 			{
 				// Bind this process to the Wi-Fi network so our HttpClient uses it.
-				_cm.BindProcessToNetwork(network);
+				if (OperatingSystem.IsAndroidVersionAtLeast(23))
+					_cm.BindProcessToNetwork(network);
 				tcs.TrySetResult(true);
 			},
 			onUnavailable: () => tcs.TrySetResult(false));
@@ -121,7 +123,10 @@ public sealed class AndroidWifiScanner : IWifiScanner
 		});
 
 		// 15-second timeout passed to the OS — it will call onUnavailable if not satisfied.
-		_cm.RequestNetwork(request, callback, 15_000);
+		if (OperatingSystem.IsAndroidVersionAtLeast(26))
+			_cm.RequestNetwork(request!, callback, 15_000);
+		else
+			tcs.TrySetResult(false);
 
 		try
 		{
@@ -139,7 +144,8 @@ public sealed class AndroidWifiScanner : IWifiScanner
 		try
 		{
 			_cm.UnregisterNetworkCallback(_activeCallback);
-			_cm.BindProcessToNetwork(null);
+			if (OperatingSystem.IsAndroidVersionAtLeast(23))
+				_cm.BindProcessToNetwork(null);
 		}
 		catch { /* best-effort */ }
 		_activeCallback = null;
