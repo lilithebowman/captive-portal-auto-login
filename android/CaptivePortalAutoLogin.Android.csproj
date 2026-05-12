@@ -20,6 +20,10 @@
     <TargetPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">36</TargetPlatformVersion>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(AndroidSdkDirectory)' == '' and Exists('$(UserProfile)\AppData\Local\Android\Sdk')">
+    <AndroidSdkDirectory>$(UserProfile)\AppData\Local\Android\Sdk</AndroidSdkDirectory>
+  </PropertyGroup>
+
   <ItemGroup>
     <PackageReference Include="Microsoft.Maui.Controls" Version="10.0.20" />
     <PackageReference Include="HtmlAgilityPack" Version="1.11.67" />
