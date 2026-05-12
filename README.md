@@ -245,3 +245,11 @@ dotnet build
 ```
 
 No tests are currently included. Adding integration tests with mocked portal pages is recommended for future hardening.
+
+## Android
+
+To build the production build of the Android version, run:
+
+```powershell
+dotnet publish CaptivePortalAutoLogin.Android.csproj -f net10.0-android -c Release -p:AndroidPackageFormat=apk
+```
