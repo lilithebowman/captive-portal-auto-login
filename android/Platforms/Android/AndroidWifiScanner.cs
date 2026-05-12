@@ -127,7 +127,7 @@ public sealed class AndroidWifiScanner : IWifiScanner
 		{
 			return await tcs.Task;
 		}
-		catch (OperationCanceledException)
+		catch (System.OperationCanceledException)
 		{
 			return false;
 		}
@@ -163,7 +163,7 @@ public sealed class AndroidWifiScanner : IWifiScanner
 		var netId = wm.AddNetwork(config);
 		if (netId == -1) return false;
 
-		return wm.EnableNetwork(netId, disableOthers: true);
+		return wm.EnableNetwork(netId, true);
 	}
 #pragma warning restore CA1422, CS0618
 

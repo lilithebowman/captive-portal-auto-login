@@ -97,7 +97,7 @@ public class CaptivePortalForegroundService : Service
 			{
 				await worker.RunAsync(token);
 			}
-			catch (OperationCanceledException) { }
+			catch (System.OperationCanceledException) { }
 			catch (Exception ex)
 			{
 				OnLog($"[Service] Worker crashed: {ex.Message}");
