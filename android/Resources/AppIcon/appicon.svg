@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <circle cx="50" cy="50" r="50" fill="#512BD4"/>
+  <!-- Wi-Fi arc arcs -->
+  <path d="M50 70 L50 70" stroke="white" stroke-width="6" stroke-linecap="round"/>
+  <path d="M38 58 Q50 45 62 58" stroke="white" stroke-width="5" fill="none" stroke-linecap="round"/>
+  <path d="M27 47 Q50 25 73 47" stroke="white" stroke-width="5" fill="none" stroke-linecap="round"/>
+  <path d="M16 37 Q50 5 84 37" stroke="white" stroke-width="5" fill="none" stroke-linecap="round"/>
+  <!-- dot -->
+  <circle cx="50" cy="70" r="4" fill="white"/>
+</svg>

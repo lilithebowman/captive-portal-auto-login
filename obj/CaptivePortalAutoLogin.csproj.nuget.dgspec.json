@@ -1,20 +1,20 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Source\\captive-portal-auto-login\\CaptivePortalAutoLogin.csproj": {}
+    "E:\\source\\captive-portal-auto-login\\CaptivePortalAutoLogin.csproj": {}
   },
   "projects": {
-    "C:\\Source\\captive-portal-auto-login\\CaptivePortalAutoLogin.csproj": {
+    "E:\\source\\captive-portal-auto-login\\CaptivePortalAutoLogin.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Source\\captive-portal-auto-login\\CaptivePortalAutoLogin.csproj",
+        "projectUniqueName": "E:\\source\\captive-portal-auto-login\\CaptivePortalAutoLogin.csproj",
         "projectName": "CaptivePortalAutoLogin",
-        "projectPath": "C:\\Source\\captive-portal-auto-login\\CaptivePortalAutoLogin.csproj",
-        "packagesPath": "C:\\Users\\Lilithe\\.nuget\\packages\\",
-        "outputPath": "C:\\Source\\captive-portal-auto-login\\obj\\",
+        "projectPath": "E:\\source\\captive-portal-auto-login\\CaptivePortalAutoLogin.csproj",
+        "packagesPath": "C:\\Users\\User\\.nuget\\packages\\",
+        "outputPath": "E:\\source\\captive-portal-auto-login\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
-          "C:\\Users\\Lilithe\\AppData\\Roaming\\NuGet\\NuGet.Config"
+          "C:\\Users\\User\\AppData\\Roaming\\NuGet\\NuGet.Config"
         ],
         "originalTargetFrameworks": [
           "net8.0"
@@ -37,7 +37,8 @@
           "enableAudit": "true",
           "auditLevel": "low",
           "auditMode": "direct"
-        }
+        },
+        "SdkAnalysisLevel": "10.0.200"
       },
       "frameworks": {
         "net8.0": {
@@ -83,12 +84,30 @@
           ],
           "assetTargetFallback": true,
           "warn": true,
+          "downloadDependencies": [
+            {
+              "name": "Microsoft.AspNetCore.App.Ref",
+              "version": "[8.0.26, 8.0.26]"
+            },
+            {
+              "name": "Microsoft.NETCore.App.Host.win-x64",
+              "version": "[8.0.26, 8.0.26]"
+            },
+            {
+              "name": "Microsoft.NETCore.App.Ref",
+              "version": "[8.0.26, 8.0.26]"
+            },
+            {
+              "name": "Microsoft.WindowsDesktop.App.Ref",
+              "version": "[8.0.26, 8.0.26]"
+            }
+          ],
           "frameworkReferences": {
             "Microsoft.NETCore.App": {
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\8.0.420/PortableRuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.203/PortableRuntimeIdentifierGraph.json"
         }
       }
     }

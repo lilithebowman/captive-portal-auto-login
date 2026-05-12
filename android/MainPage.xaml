@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+			 xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+			 x:Class="CaptivePortalAutoLogin.MainPage"
+			 Title="Captive Portal Auto-Login">
+	<ScrollView>
+		<VerticalStackLayout Padding="16"
+				Spacing="12">
+
+			<!-- Status banner -->
+			<Frame x:Name="StatusFrame"
+					BackgroundColor="#FAFAFA"
+					Padding="12"
+					CornerRadius="8"
+				   BorderColor="#BDBDBD">
+				<Label x:Name="StatusLabel"
+						Text="Service stopped"
+					   FontSize="16"
+						HorizontalTextAlignment="Center"
+					   TextColor="#757575"/>
+			</Frame>
+
+			<!-- Credentials -->
+			<Label Text="Username / Email"
+					FontAttributes="Bold"/>
+			<Entry x:Name="UsernameEntry"
+					Placeholder="user@example.com"
+					Keyboard="Email"/>
+
+			<Label Text="Password"
+					FontAttributes="Bold"/>
+			<Entry x:Name="PasswordEntry"
+				   Placeholder="Leave blank for click-through mode"
+				   IsPassword="True"/>
+
+			<!-- Poll interval -->
+			<Label Text="Poll Interval (seconds)"
+					FontAttributes="Bold"/>
+			<HorizontalStackLayout Spacing="8">
+				<Stepper x:Name="PollStepper"
+						Minimum="5"
+						Maximum="300"
+						Increment="5"
+						Value="10"
+						 ValueChanged="OnPollStepperChanged"/>
+				<Label x:Name="PollLabel"
+						Text="10 s"
+						VerticalOptions="Center"/>
+			</HorizontalStackLayout>
+
+			<!-- Max retries -->
+			<Label Text="Max Retries"
+					FontAttributes="Bold"/>
+			<HorizontalStackLayout Spacing="8">
+				<Stepper x:Name="RetryStepper"
+						Minimum="1"
+						Maximum="20"
+						Increment="1"
+						Value="5"
+						 ValueChanged="OnRetryStepperChanged"/>
+				<Label x:Name="RetryLabel"
+						Text="5"
+						VerticalOptions="Center"/>
+			</HorizontalStackLayout>
+
+			<!-- Wi-Fi scanning -->
+			<HorizontalStackLayout Spacing="8">
+				<Switch x:Name="WifiScanSwitch"/>
+				<Label Text="Enable open Wi-Fi scanning"
+						VerticalOptions="Center"/>
+			</HorizontalStackLayout>
+
+			<!-- Override URL -->
+			<Label Text="Override Login URL (optional)"
+					FontAttributes="Bold"/>
+			<Entry x:Name="OverrideUrlEntry"
+				   Placeholder="https://portal.example.com/login"
+				   Keyboard="Url"/>
+
+			<!-- Action buttons -->
+			<Button x:Name="StartStopButton"
+					Text="Start Service"
+					Clicked="OnStartStopClicked"
+					BackgroundColor="#512BD4"
+					TextColor="White"
+					CornerRadius="8"/>
+
+			<!-- Log output -->
+			<Label Text="Log"
+					FontAttributes="Bold"/>
+			<Frame BorderColor="#BDBDBD"
+					Padding="8"
+					CornerRadius="4"
+				   BackgroundColor="#FAFAFA"
+					HeightRequest="260">
+				<ScrollView x:Name="LogScrollView">
+					<Label x:Name="LogLabel"
+							Text=""
+						   FontFamily="Monospace"
+							FontSize="11"
+						   LineBreakMode="WordWrap"/>
+				</ScrollView>
+			</Frame>
+
+			<Button Text="Clear Log"
+					Clicked="OnClearLogClicked"
+					BackgroundColor="Transparent"
+					TextColor="#757575"/>
+
+		</VerticalStackLayout>
+	</ScrollView>
+</ContentPage>
