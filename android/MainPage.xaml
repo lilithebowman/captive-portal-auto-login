@@ -5,74 +5,94 @@
 			 Title="Captive Portal Auto-Login">
 	<ScrollView>
 		<VerticalStackLayout Padding="16"
-				Spacing="12">
+							 Spacing="12">
 
-			<!-- Status banner -->
+			<!-- Main Status Banner -->
 			<Frame x:Name="StatusFrame"
-					BackgroundColor="#FAFAFA"
-					Padding="12"
-					CornerRadius="8"
-				   BorderColor="#BDBDBD">
-				<Label x:Name="StatusLabel"
-						Text="Service stopped"
-					   FontSize="16"
-						HorizontalTextAlignment="Center"
-					   TextColor="#757575"/>
+				   BackgroundColor="#FAFAFA"
+				   Padding="12"
+				   CornerRadius="8"
+				   BorderColor="#BDBDBD"
+				   HasShadow="True">
+				<VerticalStackLayout Spacing="6">
+					<HorizontalStackLayout Spacing="8">
+						<ActivityIndicator x:Name="ActivityIndicator"
+										   IsRunning="False"
+										   IsVisible="False"
+										   Color="#512BD4"
+										   Scale="0.8"/>
+						<Label x:Name="StatusLabel"
+							   Text="Service stopped"
+							   FontSize="16"
+							   HorizontalTextAlignment="Start"
+							   TextColor="#757575"
+							   FontAttributes="Bold"
+							   VerticalOptions="Center"/>
+					</HorizontalStackLayout>
+
+					<!-- Detailed status message -->
+					<Label x:Name="DetailedStatusLabel"
+						   Text=""
+						   FontSize="13"
+						   LineBreakMode="WordWrap"
+						   TextColor="#9E9E9E"
+						   Margin="28,0,0,0"/>
+				</VerticalStackLayout>
 			</Frame>
 
 			<!-- Credentials -->
 			<Label Text="Username / Email"
-					FontAttributes="Bold"/>
+				   FontAttributes="Bold"/>
 			<Entry x:Name="UsernameEntry"
-					Placeholder="user@example.com"
-					Keyboard="Email"/>
+				   Placeholder="user@example.com"
+				   Keyboard="Email"/>
 
 			<Label Text="Password"
-					FontAttributes="Bold"/>
+				   FontAttributes="Bold"/>
 			<Entry x:Name="PasswordEntry"
 				   Placeholder="Leave blank for click-through mode"
 				   IsPassword="True"/>
 
 			<!-- Poll interval -->
 			<Label Text="Poll Interval (seconds)"
-					FontAttributes="Bold"/>
+				   FontAttributes="Bold"/>
 			<HorizontalStackLayout Spacing="8">
 				<Stepper x:Name="PollStepper"
-						Minimum="5"
-						Maximum="300"
-						Increment="5"
-						Value="10"
+						 Minimum="5"
+						 Maximum="300"
+						 Increment="5"
+						 Value="10"
 						 ValueChanged="OnPollStepperChanged"/>
 				<Label x:Name="PollLabel"
-						Text="10 s"
-						VerticalOptions="Center"/>
+					   Text="10 s"
+					   VerticalOptions="Center"/>
 			</HorizontalStackLayout>
 
 			<!-- Max retries -->
 			<Label Text="Max Retries"
-					FontAttributes="Bold"/>
+				   FontAttributes="Bold"/>
 			<HorizontalStackLayout Spacing="8">
 				<Stepper x:Name="RetryStepper"
-						Minimum="1"
-						Maximum="20"
-						Increment="1"
-						Value="5"
+						 Minimum="1"
+						 Maximum="20"
+						 Increment="1"
+						 Value="5"
 						 ValueChanged="OnRetryStepperChanged"/>
 				<Label x:Name="RetryLabel"
-						Text="5"
-						VerticalOptions="Center"/>
+					   Text="5"
+					   VerticalOptions="Center"/>
 			</HorizontalStackLayout>
 
 			<!-- Wi-Fi scanning -->
 			<HorizontalStackLayout Spacing="8">
 				<Switch x:Name="WifiScanSwitch"/>
 				<Label Text="Enable open Wi-Fi scanning"
-						VerticalOptions="Center"/>
+					   VerticalOptions="Center"/>
 			</HorizontalStackLayout>
 
 			<!-- Override URL -->
 			<Label Text="Override Login URL (optional)"
-					FontAttributes="Bold"/>
+				   FontAttributes="Bold"/>
 			<Entry x:Name="OverrideUrlEntry"
 				   Placeholder="https://portal.example.com/login"
 				   Keyboard="Url"/>
@@ -87,17 +107,17 @@
 
 			<!-- Log output -->
 			<Label Text="Log"
-					FontAttributes="Bold"/>
+				   FontAttributes="Bold"/>
 			<Frame BorderColor="#BDBDBD"
-					Padding="8"
-					CornerRadius="4"
+				   Padding="8"
+				   CornerRadius="4"
 				   BackgroundColor="#FAFAFA"
-					HeightRequest="260">
+				   HeightRequest="260">
 				<ScrollView x:Name="LogScrollView">
 					<Label x:Name="LogLabel"
-							Text=""
+						   Text=""
 						   FontFamily="Monospace"
-							FontSize="11"
+						   FontSize="11"
 						   LineBreakMode="WordWrap"/>
 				</ScrollView>
 			</Frame>

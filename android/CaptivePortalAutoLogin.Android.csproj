@@ -11,6 +11,7 @@
 
     <!-- Android identity -->
     <ApplicationId>com.captiveportal.autologin</ApplicationId>
+    <ApplicationTitle>Captive Portal Detection</ApplicationTitle>
     <ApplicationVersion>1</ApplicationVersion>
     <ApplicationDisplayVersion>1.0</ApplicationDisplayVersion>
 

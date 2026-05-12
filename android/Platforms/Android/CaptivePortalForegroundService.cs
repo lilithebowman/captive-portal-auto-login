@@ -28,6 +28,7 @@ public class CaptivePortalForegroundService : Service
 	// requiring a bound service connection.
 	public static event Action<string>? LogReceived;
 	public static event Action<bool>? StatusChanged;
+	public static event Action<string>? DetailedStatusChanged;
 
 	// -------------------------------------------------------------------
 	// Service lifecycle
@@ -138,7 +139,29 @@ public class CaptivePortalForegroundService : Service
 	{
 		global::Android.Util.Log.Debug("CaptivePortal", message);
 		LogReceived?.Invoke(message);
-		UpdateNotification(message.Length > 80 ? message[..80] + "…" : message);
+
+		// Extract status for notification
+		var notificationText = ExtractStatusForNotification(message);
+		UpdateNotification(notificationText);
+	}
+
+	private string ExtractStatusForNotification(string message)
+	{
+		// Keep notification text concise and actionable
+		return message switch
+		{
+			var m when m.Contains("Checking connectivity") => "Checking connectivity…",
+			var m when m.Contains("Internet confirmed") => "✓ Connected",
+			var m when m.Contains("Captive portal detected") => "⚠ Portal detected, logging in…",
+			var m when m.Contains("Attempting login") => "Submitting login form…",
+			var m when m.Contains("Login succeeded") => "✓ Login successful",
+			var m when m.Contains("Login attempt failed") => "✗ Login failed, retrying…",
+			var m when m.Contains("Scanning for") => "⊘ Scanning for networks…",
+			var m when m.Contains("Connected to") => "✓ Connected to network",
+			var m when m.Contains("Connecting to") => "Connecting to network…",
+			var m when m.Contains("Exceeded maximum retries") => "✗ Max retries exceeded",
+			_ => message.Length > 60 ? message[..60] + "…" : message
+		};
 	}
 
 	// -------------------------------------------------------------------

@@ -11,6 +11,8 @@ public partial class MainPage : ContentPage
 	private bool _serviceRunning;
 	private readonly List<string> _logLines = [];
 	private const int MaxLogLines = 200;
+	private string _currentDetailedStatus = string.Empty;
+	private DateTime _lastStatusUpdate = DateTime.Now;
 
 	public MainPage()
 	{
@@ -99,6 +101,11 @@ public partial class MainPage : ContentPage
 				StatusLabel.Text = "Service running";
 				StatusFrame.BackgroundColor = Color.FromArgb("#E8F5E9");
 				StatusLabel.TextColor = Color.FromArgb("#2E7D32");
+				ActivityIndicator.IsRunning = true;
+				ActivityIndicator.IsVisible = true;
+				_currentDetailedStatus = "Initializing…";
+				DetailedStatusLabel.Text = _currentDetailedStatus;
+				DetailedStatusLabel.TextColor = Color.FromArgb("#558B2F");
 			}
 			else
 			{
@@ -107,6 +114,10 @@ public partial class MainPage : ContentPage
 				StatusLabel.Text = "Service stopped";
 				StatusFrame.BackgroundColor = Color.FromArgb("#FAFAFA");
 				StatusLabel.TextColor = Color.FromArgb("#757575");
+				ActivityIndicator.IsRunning = false;
+				ActivityIndicator.IsVisible = false;
+				_currentDetailedStatus = string.Empty;
+				DetailedStatusLabel.Text = _currentDetailedStatus;
 			}
 		});
 	}
@@ -121,7 +132,56 @@ public partial class MainPage : ContentPage
 
 			LogLabel.Text = string.Join('\n', _logLines);
 			LogScrollView.ScrollToAsync(0, double.MaxValue, false);
+
+			// Update detailed status based on log content
+			UpdateDetailedStatus(message);
 		});
+	}
+
+	private void UpdateDetailedStatus(string logMessage)
+	{
+		// Parse log messages to update the detailed status display
+		if (logMessage.Contains("Internet confirmed"))
+		{
+			_currentDetailedStatus = "✓ Connected • Next check in";
+			DetailedStatusLabel.TextColor = Color.FromArgb("#2E7D32");
+		}
+		else if (logMessage.Contains("Captive portal detected"))
+		{
+			_currentDetailedStatus = "⚠ Portal detected • Logging in…";
+			DetailedStatusLabel.TextColor = Color.FromArgb("#F57F17");
+		}
+		else if (logMessage.Contains("Login succeeded"))
+		{
+			_currentDetailedStatus = "✓ Login successful • Verifying…";
+			DetailedStatusLabel.TextColor = Color.FromArgb("#2E7D32");
+		}
+		else if (logMessage.Contains("Login attempt failed"))
+		{
+			_currentDetailedStatus = "✗ Login failed • Retrying…";
+			DetailedStatusLabel.TextColor = Color.FromArgb("#C62828");
+		}
+		else if (logMessage.Contains("click-through"))
+		{
+			_currentDetailedStatus = "ℹ Click-through mode active";
+			DetailedStatusLabel.TextColor = Color.FromArgb("#1565C0");
+		}
+		else if (logMessage.Contains("Exceeded maximum retries"))
+		{
+			_currentDetailedStatus = "✗ Max retries exceeded • Stopped";
+			DetailedStatusLabel.TextColor = Color.FromArgb("#C62828");
+		}
+		else if (logMessage.Contains("Scanning for open networks"))
+		{
+			_currentDetailedStatus = "⊘ Scanning for Wi-Fi networks…";
+			DetailedStatusLabel.TextColor = Color.FromArgb("#1565C0");
+		}
+
+		if (!string.IsNullOrEmpty(_currentDetailedStatus))
+		{
+			DetailedStatusLabel.Text = _currentDetailedStatus;
+			_lastStatusUpdate = DateTime.Now;
+		}
 	}
 
 	private void OnClearLogClicked(object? sender, EventArgs e)

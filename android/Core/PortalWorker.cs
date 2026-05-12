@@ -46,33 +46,35 @@ public sealed class PortalWorker
 		{
 			try
 			{
+				_log("[Main] Checking connectivity…");
 				var result = await _detector.CheckAsync(ct);
 
 				if (result.IsConnectivityConfirmed)
 				{
 					retries = 0;
-					_log($"[Main] Internet confirmed. Next check in {_config.PollIntervalSeconds}s.");
+					_log($"[Main] ✓ Internet confirmed. Next check in {_config.PollIntervalSeconds}s.");
 				}
 				else if (result.IsPortalDetected)
 				{
 					retries++;
-					_log($"[Main] Captive portal detected (attempt {retries}/{_config.MaxRetries}).");
+					_log($"[Main] ⚠ Captive portal detected (attempt {retries}/{_config.MaxRetries}).");
 
 					if (retries > _config.MaxRetries)
 					{
-						_log($"[Main] Exceeded maximum retries ({_config.MaxRetries}). Giving up.");
+						_log($"[Main] ✗ Exceeded maximum retries ({_config.MaxRetries}). Giving up.");
 						break;
 					}
 
+					_log($"[Main] Attempting login at {result.LoginPageUrl}…");
 					var success = await _loginHandler.LoginAsync(result.LoginPageUrl!, ct);
 					if (success)
 					{
-						_log("[Main] Login succeeded. Verifying connectivity…");
+						_log("[Main] ✓ Login succeeded. Verifying connectivity…");
 						retries = 0;
 					}
 					else
 					{
-						_log("[Main] Login attempt failed.");
+						_log("[Main] ✗ Login attempt failed.");
 					}
 				}
 				else if (_wifiScanner is not null)
@@ -81,7 +83,7 @@ public sealed class PortalWorker
 				}
 				else
 				{
-					_log($"[Main] No captive portal. Next check in {_config.PollIntervalSeconds}s.");
+					_log($"[Main] No captive portal detected. Next check in {_config.PollIntervalSeconds}s.");
 				}
 			}
 			catch (OperationCanceledException) when (ct.IsCancellationRequested)
@@ -90,7 +92,7 @@ public sealed class PortalWorker
 			}
 			catch (Exception ex)
 			{
-				_log($"[Main] Unexpected error: {ex.Message}");
+				_log($"[Main] ✗ Unexpected error: {ex.Message}");
 			}
 
 			try
@@ -103,61 +105,66 @@ public sealed class PortalWorker
 			}
 		}
 
-		_log("[Main] Exited cleanly.");
+		_log("[Main] Service stopped.");
 	}
 
 	private async Task TryScanAndJoinAsync(CancellationToken ct)
 	{
-		_log("[Main] No connectivity. Scanning for open Wi-Fi networks…");
+		_log("[Main] Scanning for open Wi-Fi networks…");
 		var openAps = await _wifiScanner!.ScanOpenNetworksAsync(ct);
 
 		if (openAps.Count == 0)
 		{
-			_log("[Main] No open Wi-Fi networks found.");
+			_log("[Main] No open Wi-Fi networks found. Next check in {_config.PollIntervalSeconds}s.");
 			return;
 		}
 
-		_log($"[Main] Found {openAps.Count} open AP(s): {string.Join(", ", openAps.Select(s => $"'{s}'"))}");
+		_log($"[Main] ⊘ Found {openAps.Count} open network(s): {string.Join(", ", openAps.Select(s => $"'{s}'"))}");
 
 		foreach (var ssid in openAps)
 		{
 			if (ct.IsCancellationRequested) break;
 
-			_log($"[Main] Trying AP: '{ssid}'");
+			_log($"[Main] Connecting to '{ssid}'…");
 
 			var connected = await _wifiScanner.ConnectAsync(ssid, ct);
 			if (!connected)
 			{
-				_log($"[Main] Could not connect to '{ssid}'. Blocking.");
+				_log($"[Main] ✗ Connection to '{ssid}' failed. Blocking.");
 				_wifiScanner.BlockSsid(ssid);
 				continue;
 			}
 
+			_log($"[Main] ✓ Connected to '{ssid}'. Settling network stack…");
+
 			// Let the network stack settle after association.
 			await Task.Delay(TimeSpan.FromSeconds(3), ct);
 
+			_log($"[Main] Checking connectivity through '{ssid}'…");
 			var probe = await _detector.CheckAsync(ct);
 
 			if (probe.IsConnectivityConfirmed)
 			{
-				_log($"[Main] Internet confirmed via '{ssid}'.");
+				_log($"[Main] ✓ Internet confirmed via '{ssid}'.");
 				return;
 			}
 
 			if (probe.IsPortalDetected)
 			{
-				_log($"[Main] Captive portal on '{ssid}'. Attempting login…");
+				_log($"[Main] ⚠ Captive portal detected on '{ssid}'. Attempting login…");
 				var loginOk = await _loginHandler.LoginAsync(probe.LoginPageUrl!, ct);
 				if (loginOk)
 				{
-					_log($"[Main] Login succeeded on '{ssid}'.");
+					_log($"[Main] ✓ Login succeeded on '{ssid}'.");
 					return;
 				}
 			}
 
-			_log($"[Main] AP '{ssid}' could not provide internet. Blocking.");
+			_log($"[Main] AP '{ssid}' could not provide internet. Blocking and moving on.");
 			_wifiScanner.BlockSsid(ssid);
 			await _wifiScanner.DisconnectAsync(ct);
 		}
+
+		_log($"[Main] No viable networks found. Next check in {_config.PollIntervalSeconds}s.");
 	}
 }
