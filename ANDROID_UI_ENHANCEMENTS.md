@@ -59,18 +59,16 @@ Updated all log messages with:
 - Clear progress information
 - Better error messages
 
-#### Examples:
+#### Examples
 
-```
-[Main] ✓ Internet confirmed. Next check in 10s.
-[Main] ⚠ Captive portal detected (attempt 1/5).
-[Main] Attempting login at https://portal.example.com…
-[Main] ✓ Login succeeded. Verifying connectivity…
-[Main] ✗ Login attempt failed.
-[Main] ⊘ Found 3 open network(s)
-[Main] Connecting to 'OpenNet'…
-[Main] ✓ Connected to 'OpenNet'. Settling network stack…
-```
+- [Main] ✓ Internet confirmed. Next check in 10s.
+- [Main] ⚠ Captive portal detected (attempt 1/5).
+- [Main] Attempting login at <https://portal.example.com…>
+- [Main] ✓ Login succeeded. Verifying connectivity…
+- [Main] ✗ Login attempt failed.
+- [Main] ⊘ Found 3 open network(s)
+- [Main] Connecting to 'OpenNet'…
+- [Main] ✓ Connected to 'OpenNet'. Settling network stack…
 
 ## Features
 
