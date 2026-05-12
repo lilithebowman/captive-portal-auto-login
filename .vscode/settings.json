@@ -4,6 +4,8 @@
 		"/mnt/c/Program\\": true,
 		"dotnet build": true,
 		"dotnet test": true,
-		"\"/mnt/c/Program": true
+		"\"/mnt/c/Program": true,
+		"set": true,
+		"dotnet workload": true
 	}
 }
