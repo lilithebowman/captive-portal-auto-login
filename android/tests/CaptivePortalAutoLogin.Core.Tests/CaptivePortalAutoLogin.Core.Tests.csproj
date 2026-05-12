@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.11.1" />
+    <PackageReference Include="xunit" Version="2.9.2" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2" />
+    <PackageReference Include="HtmlAgilityPack" Version="1.11.67" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="..\..\Core\Models\PortalConfig.cs" Link="Core\Models\PortalConfig.cs" />
+    <Compile Include="..\..\Core\CaptivePortalDetector.cs" Link="Core\CaptivePortalDetector.cs" />
+    <Compile Include="..\..\Core\PortalLoginHandler.cs" Link="Core\PortalLoginHandler.cs" />
+  </ItemGroup>
+</Project>
